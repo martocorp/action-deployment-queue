@@ -15,39 +15,49 @@ This guide provides detailed examples of using the action-deployment-queue GitHu
 
 ## Prerequisites
 
-Before using this action, ensure you have:
+The action uses sensible defaults from the GitHub Actions context, so minimal configuration is required:
 
-1. **GitHub Personal Access Token** with scopes:
-   - `read:org` - Verify organisation membership
-   - `read:user` - Get user information
+1. **Authentication** (Optional)
+   - The action defaults to using `${{ github.token }}` (built-in GITHUB_TOKEN)
+   - If you need custom permissions, provide a GitHub Personal Access Token with:
+     - `read:org` - Verify organisation membership
+     - `read:user` - Get user information
 
 2. **Deployment Queue API Access**
-   - API URL endpoint
+   - API URL defaults to the CLI's default endpoint
+   - Override with `api_url` input if using a custom endpoint
    - Organisation membership configured in the API
 
-3. **Repository Configuration**
-   - Variables and secrets configured (see [Configuration](#configuration))
+3. **Repository Configuration** (Optional)
+   - Override defaults by providing explicit values (see [Configuration](#configuration))
 
 ## Configuration
 
-### Repository Variables
+### Default Behaviour
 
-Add these as repository or environment variables:
+The action automatically uses:
+- **`github_token`**: `${{ github.token }}` (built-in GITHUB_TOKEN)
+- **`organisation`**: `${{ github.repository_owner }}`
+- **`api_url`**: CLI's default endpoint
+
+### Custom Configuration (Optional)
+
+Override defaults by providing explicit values:
+
+#### Repository Variables
 
 ```
 DEPLOYMENT_API_URL=https://deployments.example.com
-DEPLOYMENT_ORG=my-organisation
+DEPLOYMENT_ORG=my-custom-organisation
 ```
 
-### Repository Secrets
-
-Add these as repository secrets:
+#### Repository Secrets
 
 ```
 DEPLOYMENT_GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 ```
 
-To create the GitHub token:
+To create a custom GitHub token:
 1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
 2. Generate new token with `read:org` and `read:user` scopes
 3. Copy the token value
@@ -73,9 +83,10 @@ Create a new deployment in the queue.
     provider: gcp
     account: my-project
     region: europe-west1
-    api_url: ${{ vars.DEPLOYMENT_API_URL }}
-    github_token: ${{ secrets.DEPLOYMENT_GITHUB_TOKEN }}
-    organisation: ${{ vars.DEPLOYMENT_ORG }}
+    # Optional: Override defaults if needed
+    # api_url: ${{ vars.DEPLOYMENT_API_URL }}
+    # github_token: ${{ secrets.DEPLOYMENT_GITHUB_TOKEN }}
+    # organisation: ${{ vars.DEPLOYMENT_ORG }}
 
 - name: Output deployment ID
   run: echo "Deployment ID ${{ steps.create_deployment.outputs.deployment_id }}"

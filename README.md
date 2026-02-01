@@ -38,9 +38,10 @@ jobs:
           provider: gcp
           account: my-project
           region: europe-west1
-          api_url: https://deployments.example.com
-          github_token: ${{ secrets.DEPLOYMENT_QUEUE_GITHUB_TOKEN }}
-          organisation: my-org
+          # Optional: Override defaults if needed
+          # api_url: https://deployments.example.com
+          # github_token: ${{ secrets.DEPLOYMENT_QUEUE_GITHUB_TOKEN }}
+          # organisation: my-org
 ```
 
 ### Create Deployment
@@ -140,14 +141,14 @@ Create a rollback deployment from an existing deployment:
 
 ## Inputs
 
-### Common Inputs (Required for All Actions)
+### Common Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
 | `action` | Action to execute: `create`, `update`, or `rollback` | Yes | - |
-| `api_url` | Deployment Queue API URL | Yes | - |
-| `github_token` | GitHub token with `read:org` and `read:user` scopes | Yes | - |
-| `organisation` | GitHub organisation name | Yes | - |
+| `api_url` | Deployment Queue API URL | No | CLI default |
+| `github_token` | GitHub token with `read:org` and `read:user` scopes | No | `${{ github.token }}` |
+| `organisation` | GitHub organisation name | No | `${{ github.repository_owner }}` |
 
 ### Create Action Inputs
 
@@ -198,19 +199,43 @@ Create a rollback deployment from an existing deployment:
 
 ## Authentication
 
-The action requires a GitHub Personal Access Token (PAT) with the following scopes:
+The action uses sensible defaults from the GitHub Actions context:
+- **`github_token`**: Defaults to `${{ github.token }}` (built-in GITHUB_TOKEN)
+- **`organisation`**: Defaults to `${{ github.repository_owner }}`
+- **`api_url`**: Uses the CLI's default endpoint
+
+### Using Custom Authentication
+
+If the default `GITHUB_TOKEN` doesn't have sufficient permissions, you can provide a Personal Access Token (PAT) with:
 - `read:org` - Verify organisation membership
 - `read:user` - Get user information
 
-### Creating a GitHub Token
+#### Creating a GitHub Token
 
 1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
 2. Generate new token with `read:org` and `read:user` scopes
 3. Add the token as a repository secret: `DEPLOYMENT_GITHUB_TOKEN`
 
-### Recommended Setup
+#### Custom Configuration
 
-Store configuration as repository variables and secrets:
+Override defaults by providing explicit values:
+
+```yaml
+- name: Create deployment with custom config
+  uses: martocorp/action-deployment-queue@v1
+  with:
+    action: create
+    name: my-service
+    version: v1.0.0
+    type: k8s
+    provider: gcp
+    # Override defaults
+    api_url: https://deployments.example.com
+    github_token: ${{ secrets.DEPLOYMENT_GITHUB_TOKEN }}
+    organisation: my-custom-org
+```
+
+Alternatively, store configuration as repository variables and secrets:
 
 **Variables:**
 ```

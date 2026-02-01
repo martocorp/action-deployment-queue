@@ -17,15 +17,17 @@ inputs:
   # Authentication inputs
   api_url:
     description: "Deployment Queue API URL"
-    required: true
+    required: false
 
   github_token:
     description: "GitHub token with read:org and read:user scopes"
-    required: true
+    required: false
+    default: ${{ github.token }}
 
   organisation:
     description: "GitHub organisation name"
-    required: true
+    required: false
+    default: ${{ github.repository_owner }}
 
   # Common inputs
   deployment_id:
