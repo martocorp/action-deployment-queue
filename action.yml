@@ -110,7 +110,7 @@ inputs:
   container_image:
     description: "Container image to use"
     required: false
-    default: "martocorp/deployment-queue-cli:latest"
+    default: "martocorp/deployment-queue-cli:0.2.2"
 
 outputs:
   deployment_id:
