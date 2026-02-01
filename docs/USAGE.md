@@ -110,10 +110,10 @@ Create a new deployment in the queue.
 | `tenant` | Tenant ID | - |
 | `cell` | Cell ID | - |
 | `auto` | Auto-deploy when ready | `true` |
-| `description` | Deployment description | - |
+| `commit` | Git commit SHA | `${{ github.sha }}` |
+| `build_uri` | Build URI | GitHub Actions run URL |
+| `description` | Deployment description | Workflow name and trigger |
 | `notes` | Deployment notes | - |
-| `commit` | Git commit SHA | - |
-| `build_uri` | Build URI | - |
 | `pipeline_params` | Pipeline params (JSON) | - |
 
 #### With All Options

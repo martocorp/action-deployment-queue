@@ -163,10 +163,10 @@ Create a rollback deployment from an existing deployment:
 | `tenant` | Tenant ID | No | - |
 | `cell` | Cell ID | No | - |
 | `auto` | Auto-deploy when ready: `true` or `false` | No | `true` |
-| `description` | Deployment description | No | - |
+| `commit` | Git commit SHA | No | `${{ github.sha }}` |
+| `build_uri` | Build URI | No | GitHub Actions run URL |
+| `description` | Deployment description | No | Workflow name and trigger |
 | `notes` | Deployment notes | No | - |
-| `commit` | Git commit SHA | No | - |
-| `build_uri` | Build URI | No | - |
 | `pipeline_params` | Pipeline extra params as JSON string | No | - |
 
 ### Update Action Inputs

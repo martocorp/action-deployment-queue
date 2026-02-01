@@ -204,10 +204,30 @@ runs:
             [[ -n "${{ inputs.region }}" ]] && CMD_ARGS="$CMD_ARGS --region ${{ inputs.region }}"
             [[ -n "${{ inputs.tenant }}" ]] && CMD_ARGS="$CMD_ARGS --tenant ${{ inputs.tenant }}"
             [[ -n "${{ inputs.cell }}" ]] && CMD_ARGS="$CMD_ARGS --cell ${{ inputs.cell }}"
-            [[ -n "${{ inputs.description }}" ]] && CMD_ARGS="$CMD_ARGS --description '${{ inputs.description }}'"
+
+            # Auto-populate description if not provided
+            DESCRIPTION="${{ inputs.description }}"
+            if [[ -z "$DESCRIPTION" ]]; then
+              DESCRIPTION="Deployment from ${{ github.workflow }} (triggered by ${{ github.event_name }})"
+            fi
+            CMD_ARGS="$CMD_ARGS --description '$DESCRIPTION'"
+
             [[ -n "${{ inputs.notes }}" ]] && CMD_ARGS="$CMD_ARGS --notes '${{ inputs.notes }}'"
-            [[ -n "${{ inputs.commit }}" ]] && CMD_ARGS="$CMD_ARGS --commit ${{ inputs.commit }}"
-            [[ -n "${{ inputs.build_uri }}" ]] && CMD_ARGS="$CMD_ARGS --build-uri '${{ inputs.build_uri }}'"
+
+            # Auto-populate commit SHA if not provided
+            COMMIT_SHA="${{ inputs.commit }}"
+            if [[ -z "$COMMIT_SHA" ]]; then
+              COMMIT_SHA="${{ github.sha }}"
+            fi
+            CMD_ARGS="$CMD_ARGS --commit $COMMIT_SHA"
+
+            # Auto-populate build URI if not provided
+            BUILD_URI="${{ inputs.build_uri }}"
+            if [[ -z "$BUILD_URI" ]]; then
+              BUILD_URI="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            fi
+            CMD_ARGS="$CMD_ARGS --build-uri '$BUILD_URI'"
+
             [[ -n "${{ inputs.pipeline_params }}" ]] && \
               CMD_ARGS="$CMD_ARGS --pipeline-params '${{ inputs.pipeline_params }}'"
 
