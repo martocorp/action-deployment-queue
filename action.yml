@@ -244,17 +244,17 @@ runs:
     - name: Run deployment-queue-cli
       id: run-cli
       shell: bash
-      env:
-        DEPLOYMENT_QUEUE_CLI_API_URL: ${{ inputs.api_url }}
-        DEPLOYMENT_QUEUE_CLI_GITHUB_TOKEN: ${{ inputs.github_token }}
-        DEPLOYMENT_QUEUE_CLI_ORGANISATION: ${{ inputs.organisation }}
       run: |
         set -e
 
+        # Build docker environment variables (only set if provided)
+        DOCKER_ENV_ARGS=""
+        [[ -n "${{ inputs.api_url }}" ]] && DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e DEPLOYMENT_QUEUE_CLI_API_URL=${{ inputs.api_url }}"
+        [[ -n "${{ inputs.github_token }}" ]] && DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e DEPLOYMENT_QUEUE_CLI_GITHUB_TOKEN=${{ inputs.github_token }}"
+        [[ -n "${{ inputs.organisation }}" ]] && DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e DEPLOYMENT_QUEUE_CLI_ORGANISATION=${{ inputs.organisation }}"
+
         OUTPUT=$(docker run --rm \
-          -e DEPLOYMENT_QUEUE_CLI_API_URL \
-          -e DEPLOYMENT_QUEUE_CLI_GITHUB_TOKEN \
-          -e DEPLOYMENT_QUEUE_CLI_ORGANISATION \
+          $DOCKER_ENV_ARGS \
           ${{ inputs.container_image }} \
           deployment-queue-cli ${{ steps.build-cmd.outputs.command }} ${{ steps.build-cmd.outputs.cmd_args }})
 
