@@ -165,7 +165,7 @@ Create a rollback deployment from an existing deployment:
 | `auto` | Auto-deploy when ready: `true` or `false` | No | `true` |
 | `commit` | Git commit SHA | No | `${{ github.sha }}` |
 | `build_uri` | Build URI | No | GitHub Actions run URL |
-| `description` | Deployment description | No | Workflow name and trigger |
+| `description` | Deployment description | No | Commit message (first line) |
 | `notes` | Deployment notes | No | - |
 | `pipeline_params` | Pipeline extra params as JSON string | No | - |
 

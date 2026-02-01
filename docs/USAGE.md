@@ -112,7 +112,7 @@ Create a new deployment in the queue.
 | `auto` | Auto-deploy when ready | `true` |
 | `commit` | Git commit SHA | `${{ github.sha }}` |
 | `build_uri` | Build URI | GitHub Actions run URL |
-| `description` | Deployment description | Workflow name and trigger |
+| `description` | Deployment description | Commit message (first line) |
 | `notes` | Deployment notes | - |
 | `pipeline_params` | Pipeline params (JSON) | - |
 

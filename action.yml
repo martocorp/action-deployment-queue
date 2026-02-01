@@ -205,10 +205,27 @@ runs:
             [[ -n "${{ inputs.tenant }}" ]] && CMD_ARGS="$CMD_ARGS --tenant ${{ inputs.tenant }}"
             [[ -n "${{ inputs.cell }}" ]] && CMD_ARGS="$CMD_ARGS --cell ${{ inputs.cell }}"
 
-            # Auto-populate description if not provided
+            # Auto-populate description from commit message if not provided
             DESCRIPTION="${{ inputs.description }}"
             if [[ -z "$DESCRIPTION" ]]; then
-              DESCRIPTION="Deployment from ${{ github.workflow }} (triggered by ${{ github.event_name }})"
+              # Try to get commit message from GitHub event first (fastest)
+              DESCRIPTION="${{ github.event.head_commit.message }}"
+
+              # If not available, fetch from GitHub API
+              if [[ -z "$DESCRIPTION" ]] || [[ "$DESCRIPTION" == "null" ]]; then
+                COMMIT_SHA="${{ inputs.commit }}"
+                [[ -z "$COMMIT_SHA" ]] && COMMIT_SHA="${{ github.sha }}"
+
+                DESCRIPTION=$(curl -s -H "Authorization: token ${{ inputs.github_token }}" \
+                  "https://api.github.com/repos/${{ github.repository }}/commits/$COMMIT_SHA" | \
+                  jq -r '.commit.message // empty' | head -n 1)
+
+                # Fallback if API call fails
+                [[ -z "$DESCRIPTION" ]] && DESCRIPTION="Deployment from ${{ github.workflow }}"
+              else
+                # Use only first line of commit message
+                DESCRIPTION=$(echo "$DESCRIPTION" | head -n 1)
+              fi
             fi
             CMD_ARGS="$CMD_ARGS --description '$DESCRIPTION'"
 
