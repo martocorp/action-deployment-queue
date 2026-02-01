@@ -1,0 +1,271 @@
+---
+name: "Deployment Queue"
+description: |
+  A GitHub Action to manage deployments using the deployment-queue-cli.
+  Create, update status, and rollback deployments.
+author: martocorp
+branding:
+  icon: "package"
+  color: "blue"
+
+inputs:
+  # Action type
+  action:
+    description: "Action to execute: 'create', 'update', or 'rollback'"
+    required: true
+
+  # Authentication inputs
+  api_url:
+    description: "Deployment Queue API URL"
+    required: true
+
+  github_token:
+    description: "GitHub token with read:org and read:user scopes"
+    required: true
+
+  organisation:
+    description: "GitHub organisation name"
+    required: true
+
+  # Common inputs
+  deployment_id:
+    description: "Deployment ID (required for 'update' and 'rollback' actions)"
+    required: false
+
+  # Create-specific inputs
+  name:
+    description: "Component name (required for 'create' action)"
+    required: false
+
+  version:
+    description: "Version to deploy (required for 'create' action)"
+    required: false
+
+  type:
+    description: "Deployment type: k8s, terraform, or data_pipeline (required for 'create' action)"
+    required: false
+
+  provider:
+    description: "Cloud provider: gcp, aws, or azure (required for 'create' action)"
+    required: false
+
+  account:
+    description: "Cloud account ID (optional for 'create' action)"
+    required: false
+
+  region:
+    description: "Cloud region (optional for 'create' action)"
+    required: false
+
+  tenant:
+    description: "Tenant ID (optional for 'create' action)"
+    required: false
+
+  cell:
+    description: "Cell ID (optional for 'create' action)"
+    required: false
+
+  auto:
+    description: "Auto-deploy when ready: 'true' or 'false' (default: 'true' for 'create' action)"
+    required: false
+    default: "true"
+
+  description:
+    description: "Deployment description (optional for 'create' action)"
+    required: false
+
+  notes:
+    description: "Deployment notes (optional for 'create' action)"
+    required: false
+
+  commit:
+    description: "Git commit SHA (optional for 'create' action)"
+    required: false
+
+  build_uri:
+    description: "Build URI (optional for 'create' action)"
+    required: false
+
+  pipeline_params:
+    description: "Pipeline extra params as JSON string (optional for 'create' action)"
+    required: false
+
+  # Update-specific inputs
+  status:
+    description: "New status: scheduled, in_progress, deployed, failed, or skipped (required for 'update' action)"
+    required: false
+
+  # Rollback-specific inputs
+  target_version:
+    description: "Target version for rollback (optional for 'rollback' action)"
+    required: false
+
+  # Common options
+  yes:
+    description: "Skip confirmation prompts: 'true' or 'false' (default: 'true')"
+    required: false
+    default: "true"
+
+  # Container configuration
+  container_image:
+    description: "Container image to use"
+    required: false
+    default: "martocorp/deployment-queue-cli:latest"
+
+outputs:
+  deployment_id:
+    description: "Deployment ID (for create and rollback actions)"
+    value: ${{ steps.run-cli.outputs.deployment_id }}
+
+  result:
+    description: "Command execution result"
+    value: ${{ steps.run-cli.outputs.result }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        ACTION="${{ inputs.action }}"
+
+        # Validate action type
+        if [[ ! "$ACTION" =~ ^(create|update|rollback)$ ]]; then
+          echo "Error: action must be 'create', 'update', or 'rollback'"
+          exit 1
+        fi
+
+        # Validate action-specific required inputs
+        case "$ACTION" in
+          create)
+            if [[ -z "${{ inputs.name }}" ]]; then
+              echo "Error: 'name' is required for create action"
+              exit 1
+            fi
+            if [[ -z "${{ inputs.version }}" ]]; then
+              echo "Error: 'version' is required for create action"
+              exit 1
+            fi
+            if [[ -z "${{ inputs.type }}" ]]; then
+              echo "Error: 'type' is required for create action"
+              exit 1
+            fi
+            if [[ ! "${{ inputs.type }}" =~ ^(k8s|terraform|data_pipeline)$ ]]; then
+              echo "Error: 'type' must be k8s, terraform, or data_pipeline"
+              exit 1
+            fi
+            if [[ -z "${{ inputs.provider }}" ]]; then
+              echo "Error: 'provider' is required for create action"
+              exit 1
+            fi
+            if [[ ! "${{ inputs.provider }}" =~ ^(gcp|aws|azure)$ ]]; then
+              echo "Error: 'provider' must be gcp, aws, or azure"
+              exit 1
+            fi
+            ;;
+          update)
+            if [[ -z "${{ inputs.deployment_id }}" ]]; then
+              echo "Error: 'deployment_id' is required for update action"
+              exit 1
+            fi
+            if [[ -z "${{ inputs.status }}" ]]; then
+              echo "Error: 'status' is required for update action"
+              exit 1
+            fi
+            if [[ ! "${{ inputs.status }}" =~ ^(scheduled|in_progress|deployed|failed|skipped)$ ]]; then
+              echo "Error: 'status' must be scheduled, in_progress, deployed, failed, or skipped"
+              exit 1
+            fi
+            ;;
+          rollback)
+            if [[ -z "${{ inputs.deployment_id }}" ]]; then
+              echo "Error: 'deployment_id' is required for rollback action"
+              exit 1
+            fi
+            ;;
+        esac
+
+    - name: Build CLI command
+      id: build-cmd
+      shell: bash
+      run: |
+        ACTION="${{ inputs.action }}"
+        CMD_ARGS=""
+
+        case "$ACTION" in
+          create)
+            CMD_ARGS="${{ inputs.name }} ${{ inputs.version }}"
+            CMD_ARGS="$CMD_ARGS --type ${{ inputs.type }}"
+            CMD_ARGS="$CMD_ARGS --provider ${{ inputs.provider }}"
+
+            [[ -n "${{ inputs.account }}" ]] && CMD_ARGS="$CMD_ARGS --account ${{ inputs.account }}"
+            [[ -n "${{ inputs.region }}" ]] && CMD_ARGS="$CMD_ARGS --region ${{ inputs.region }}"
+            [[ -n "${{ inputs.tenant }}" ]] && CMD_ARGS="$CMD_ARGS --tenant ${{ inputs.tenant }}"
+            [[ -n "${{ inputs.cell }}" ]] && CMD_ARGS="$CMD_ARGS --cell ${{ inputs.cell }}"
+            [[ -n "${{ inputs.description }}" ]] && CMD_ARGS="$CMD_ARGS --description '${{ inputs.description }}'"
+            [[ -n "${{ inputs.notes }}" ]] && CMD_ARGS="$CMD_ARGS --notes '${{ inputs.notes }}'"
+            [[ -n "${{ inputs.commit }}" ]] && CMD_ARGS="$CMD_ARGS --commit ${{ inputs.commit }}"
+            [[ -n "${{ inputs.build_uri }}" ]] && CMD_ARGS="$CMD_ARGS --build-uri '${{ inputs.build_uri }}'"
+            [[ -n "${{ inputs.pipeline_params }}" ]] && \
+              CMD_ARGS="$CMD_ARGS --pipeline-params '${{ inputs.pipeline_params }}'"
+
+            if [[ "${{ inputs.auto }}" == "true" ]]; then
+              CMD_ARGS="$CMD_ARGS --auto"
+            else
+              CMD_ARGS="$CMD_ARGS --no-auto"
+            fi
+            ;;
+          update)
+            CMD_ARGS="update-status ${{ inputs.deployment_id }} ${{ inputs.status }}"
+            ;;
+          rollback)
+            CMD_ARGS="rollback ${{ inputs.deployment_id }}"
+            [[ -n "${{ inputs.target_version }}" ]] && CMD_ARGS="$CMD_ARGS --version ${{ inputs.target_version }}"
+            ;;
+        esac
+
+        # Add yes flag if enabled
+        if [[ "${{ inputs.yes }}" == "true" && "$ACTION" != "update" ]]; then
+          CMD_ARGS="$CMD_ARGS --yes"
+        fi
+
+        # Store command for next step
+        echo "cmd_args=$CMD_ARGS" >> $GITHUB_OUTPUT
+
+        # Determine base command
+        if [[ "$ACTION" == "update" ]]; then
+          echo "command=" >> $GITHUB_OUTPUT
+        else
+          echo "command=$ACTION" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run deployment-queue-cli
+      id: run-cli
+      shell: bash
+      env:
+        DEPLOYMENT_QUEUE_CLI_API_URL: ${{ inputs.api_url }}
+        DEPLOYMENT_QUEUE_CLI_GITHUB_TOKEN: ${{ inputs.github_token }}
+        DEPLOYMENT_QUEUE_CLI_ORGANISATION: ${{ inputs.organisation }}
+      run: |
+        set -e
+
+        OUTPUT=$(docker run --rm \
+          -e DEPLOYMENT_QUEUE_CLI_API_URL \
+          -e DEPLOYMENT_QUEUE_CLI_GITHUB_TOKEN \
+          -e DEPLOYMENT_QUEUE_CLI_ORGANISATION \
+          ${{ inputs.container_image }} \
+          deployment-queue-cli ${{ steps.build-cmd.outputs.command }} ${{ steps.build-cmd.outputs.cmd_args }})
+
+        echo "$OUTPUT"
+
+        # Extract deployment ID if present (for create and rollback actions)
+        DEPLOYMENT_ID=$(echo "$OUTPUT" | grep -oP 'ID:\s+\K[a-f0-9-]+' | head -n1 || echo "")
+
+        if [[ -n "$DEPLOYMENT_ID" ]]; then
+          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+        fi
+
+        # Store full output
+        echo "result<<EOF" >> $GITHUB_OUTPUT
+        echo "$OUTPUT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT

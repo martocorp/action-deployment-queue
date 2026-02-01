@@ -1,0 +1,19 @@
+---
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+      - release/**
+  pull_request:
+    branches:
+      - main
+      - release/**
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: martoc/workflow-github-actions/.github/workflows/publish.yml@v1
+    secrets: inherit
